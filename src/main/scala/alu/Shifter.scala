@@ -21,8 +21,7 @@ class Shifter extends Component {
 
 	val tempShift = UInt(64 bits)
 	//trick: use right shift to get left shift
-	tempShift := (io.shiftCtr === 0) ? io.data.reversed | io.data
-	tempShift := tempShift |>> io.shamt
+	tempShift := ((io.shiftCtr === 0) ? io.data.reversed | io.data) |>> io.shamt
 
 	val leftShiftResult = UInt(64 bits)
 	leftShiftResult := tempShift.reversed
@@ -37,7 +36,8 @@ class Shifter extends Component {
 	io.shiftResult := io.shiftCtr.mux(
 		0 -> leftShiftResult,
 		1 -> arithRightShiftResult,
-		2 -> logicRightShiftResult
+		2 -> logicRightShiftResult,
+		default -> U"64'b0"
 	)
 }
 

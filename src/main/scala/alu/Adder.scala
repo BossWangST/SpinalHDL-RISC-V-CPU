@@ -18,7 +18,8 @@ class Adder extends Component {
 
 	val tempResult = UInt(65 bits) //one more bit for carry out
 
-	tempResult := io.data1 + io.data2 + io.carryIn
+	//CAUTION: Here we need to use +^ as add with carry
+	tempResult := io.data1 +^ io.data2 + io.carryIn.asUInt
 
 	when(tempResult === 0) {
 		io.zero := True
