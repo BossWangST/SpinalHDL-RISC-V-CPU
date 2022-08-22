@@ -7,7 +7,7 @@ class Adder extends Component {
 	val io = new Bundle {
 		val data1 = in UInt (64 bits)
 		val data2 = in UInt (64 bits)
-		val carryIn = in Bool()
+		val subCtr = in Bool()
 		val carryOut = out Bool()
 		val overflow = out Bool()
 		val sign = out Bool()
@@ -19,7 +19,11 @@ class Adder extends Component {
 	val tempResult = UInt(65 bits) //one more bit for carry out
 
 	//CAUTION: Here we need to use +^ as add with carry
-	tempResult := io.data1 +^ io.data2 + io.carryIn.asUInt
+	when(io.subCtr) {
+		tempResult := io.data1 +^ io.data2 + 1
+	} otherwise {
+		tempResult := io.data1 +^ io.data2
+	}
 
 	when(tempResult === 0) {
 		io.zero := True
@@ -38,7 +42,9 @@ class Adder extends Component {
 }
 
 object AdderVerilog {
-	def main(args: Array[String]): Unit = {
-		SpinalVerilog(new Adder)
-	}
+	def main(args: Array[String]): Unit =
+		SpinalConfig(
+			mode = Verilog,
+			targetDirectory = "verilog/ALU"
+		).generate(new Adder)
 }

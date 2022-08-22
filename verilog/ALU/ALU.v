@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.7.0a    git head : 150a9b9067020722818dfb17df4a23ac712a7af8
 // Component : ALU
-// Git hash  : 7181f2356efd0a48321a94cd8e704eab566ca4f8
+// Git hash  : 9ecf148c235ca4ff4f842a6d692883944a632ac4
 
 `timescale 1ns/1ps
 
@@ -9,10 +9,14 @@ module ALU (
   input      [63:0]   data1,
   input      [63:0]   data2,
   output              Zero,
-  output     [63:0]   aluResult
+  output     [63:0]   aluResult,
+  input               clk,
+  input               reset
 );
 
+  wire       [63:0]   adder_1_data1;
   wire       [63:0]   adder_1_data2;
+  wire       [63:0]   shifter_1_data;
   wire       [4:0]    shifter_1_shamt;
   wire                adder_1_carryOut;
   wire                adder_1_overflow;
@@ -20,55 +24,34 @@ module ALU (
   wire                adder_1_zero;
   wire       [63:0]   adder_1_adderResult;
   wire       [63:0]   shifter_1_shiftResult;
-  wire                _zz_data2;
-  wire       [0:0]    _zz_data2_1;
-  wire       [53:0]   _zz_data2_2;
-  wire                _zz_data2_3;
-  wire       [0:0]    _zz_data2_4;
-  wire       [42:0]   _zz_data2_5;
-  wire                _zz_data2_6;
-  wire       [0:0]    _zz_data2_7;
-  wire       [31:0]   _zz_data2_8;
-  wire                _zz_data2_9;
-  wire       [0:0]    _zz_data2_10;
-  wire       [20:0]   _zz_data2_11;
-  wire                _zz_data2_12;
-  wire       [0:0]    _zz_data2_13;
-  wire       [9:0]    _zz_data2_14;
+  wire       [63:0]   _zz_sltResult;
+  wire       [63:0]   _zz_sltResult_1;
+  wire       [4:0]    _zz_shamt;
+  reg        [7:0]    counter;
   reg        [1:0]    opCtr;
   reg                 signCtr;
   reg                 subCtr;
   reg                 overflowCtr;
   reg        [1:0]    shiftCtr;
   reg        [1:0]    logicCtr;
-  wire                carryFlag;
-  wire                signFlag;
+  wire       [63:0]   adderResult;
+  wire                sltLess;
+  wire                sltuLess;
   wire       [63:0]   sltResult;
+  wire       [63:0]   shiftResult;
   wire       [63:0]   andResult;
   wire       [63:0]   orResult;
   wire       [63:0]   xorResult;
   reg        [63:0]   logicResult;
   reg        [63:0]   _zz_aluResult;
 
-  assign _zz_data2 = data2[8];
-  assign _zz_data2_1 = data2[9];
-  assign _zz_data2_2 = {data2[10],{data2[11],{data2[12],{data2[13],{data2[14],{data2[15],{data2[16],{data2[17],{data2[18],{_zz_data2_3,{_zz_data2_4,_zz_data2_5}}}}}}}}}}};
-  assign _zz_data2_3 = data2[19];
-  assign _zz_data2_4 = data2[20];
-  assign _zz_data2_5 = {data2[21],{data2[22],{data2[23],{data2[24],{data2[25],{data2[26],{data2[27],{data2[28],{data2[29],{_zz_data2_6,{_zz_data2_7,_zz_data2_8}}}}}}}}}}};
-  assign _zz_data2_6 = data2[30];
-  assign _zz_data2_7 = data2[31];
-  assign _zz_data2_8 = {data2[32],{data2[33],{data2[34],{data2[35],{data2[36],{data2[37],{data2[38],{data2[39],{data2[40],{_zz_data2_9,{_zz_data2_10,_zz_data2_11}}}}}}}}}}};
-  assign _zz_data2_9 = data2[41];
-  assign _zz_data2_10 = data2[42];
-  assign _zz_data2_11 = {data2[43],{data2[44],{data2[45],{data2[46],{data2[47],{data2[48],{data2[49],{data2[50],{data2[51],{_zz_data2_12,{_zz_data2_13,_zz_data2_14}}}}}}}}}}};
-  assign _zz_data2_12 = data2[52];
-  assign _zz_data2_13 = data2[53];
-  assign _zz_data2_14 = {data2[54],{data2[55],{data2[56],{data2[57],{data2[58],{data2[59],{data2[60],{data2[61],{data2[62],data2[63]}}}}}}}}};
+  assign _zz_sltResult = 64'h0000000000000001;
+  assign _zz_sltResult_1 = 64'h0;
+  assign _zz_shamt = data2[4 : 0];
   Adder adder_1 (
-    .data1       (data1[63:0]              ), //i
+    .data1       (adder_1_data1[63:0]      ), //i
     .data2       (adder_1_data2[63:0]      ), //i
-    .carryIn     (subCtr                   ), //i
+    .subCtr      (subCtr                   ), //i
     .carryOut    (adder_1_carryOut         ), //o
     .overflow    (adder_1_overflow         ), //o
     .sign        (adder_1_sign             ), //o
@@ -76,7 +59,7 @@ module ALU (
     .adderResult (adder_1_adderResult[63:0])  //o
   );
   Shifter shifter_1 (
-    .data        (data1[63:0]                ), //i
+    .data        (shifter_1_data[63:0]       ), //i
     .shamt       (shifter_1_shamt[4:0]       ), //i
     .shiftCtr    (shiftCtr[1:0]              ), //i
     .shiftResult (shifter_1_shiftResult[63:0])  //o
@@ -174,12 +157,16 @@ module ALU (
     endcase
   end
 
-  assign adder_1_data2 = (subCtr ? {data2[0],{data2[1],{data2[2],{data2[3],{data2[4],{data2[5],{data2[6],{data2[7],{_zz_data2,{_zz_data2_1,_zz_data2_2}}}}}}}}}} : data2);
+  assign adder_1_data1 = data1;
+  assign adder_1_data2 = (subCtr ? (~ data2) : data2);
   assign Zero = adder_1_zero;
-  assign carryFlag = (subCtr ^ adder_1_carryOut);
-  assign signFlag = ((adder_1_overflow && overflowCtr) ^ adder_1_sign);
-  assign sltResult = ((signCtr ? signFlag : carryFlag) ? 64'h0000000000000001 : 64'h0);
-  assign shifter_1_shamt = data2[4 : 0];
+  assign adderResult = adder_1_adderResult;
+  assign sltLess = (adder_1_sign ^ adder_1_overflow);
+  assign sltuLess = (! adder_1_carryOut);
+  assign sltResult = ((signCtr ? sltLess : sltuLess) ? _zz_sltResult : _zz_sltResult_1);
+  assign shifter_1_data = data1;
+  assign shifter_1_shamt = _zz_shamt;
+  assign shiftResult = shifter_1_shiftResult;
   assign andResult = (data1 & data2);
   assign orResult = (data1 | data2);
   assign xorResult = (data1 ^ data2);
@@ -203,13 +190,13 @@ module ALU (
   always @(*) begin
     case(opCtr)
       2'b00 : begin
-        _zz_aluResult = adder_1_adderResult;
+        _zz_aluResult = adderResult;
       end
       2'b01 : begin
         _zz_aluResult = sltResult;
       end
       2'b10 : begin
-        _zz_aluResult = shifter_1_shiftResult;
+        _zz_aluResult = shiftResult;
       end
       default : begin
         _zz_aluResult = logicResult;
@@ -218,6 +205,14 @@ module ALU (
   end
 
   assign aluResult = _zz_aluResult;
+  always @(posedge clk or posedge reset) begin
+    if(reset) begin
+      counter <= 8'h0;
+    end else begin
+      counter <= (counter + 8'h01);
+    end
+  end
+
 
 endmodule
 
@@ -398,7 +393,7 @@ endmodule
 module Adder (
   input      [63:0]   data1,
   input      [63:0]   data2,
-  input               carryIn,
+  input               subCtr,
   output              carryOut,
   output              overflow,
   output              sign,
@@ -407,18 +402,21 @@ module Adder (
 );
 
   wire       [64:0]   _zz_tempResult;
-  wire       [64:0]   _zz_tempResult_1;
-  wire       [0:0]    _zz_tempResult_2;
-  wire       [64:0]   tempResult;
-  wire                when_Adder_l24;
+  reg        [64:0]   tempResult;
+  wire                when_Adder_l28;
 
   assign _zz_tempResult = ({1'b0,data1} + {1'b0,data2});
-  assign _zz_tempResult_2 = carryIn;
-  assign _zz_tempResult_1 = {64'd0, _zz_tempResult_2};
-  assign tempResult = (_zz_tempResult + _zz_tempResult_1);
-  assign when_Adder_l24 = (tempResult == 65'h0);
   always @(*) begin
-    if(when_Adder_l24) begin
+    if(subCtr) begin
+      tempResult = (_zz_tempResult + 65'h00000000000000001);
+    end else begin
+      tempResult = ({1'b0,data1} + {1'b0,data2});
+    end
+  end
+
+  assign when_Adder_l28 = (tempResult == 65'h0);
+  always @(*) begin
+    if(when_Adder_l28) begin
       zero = 1'b1;
     end else begin
       zero = 1'b0;

@@ -43,6 +43,9 @@ class Shifter extends Component {
 
 object ShifterVerilog {
 	def main(args: Array[String]): Unit = {
-		SpinalVerilog(new Shifter)
+		SpinalConfig(
+			mode = Verilog,
+			targetDirectory = "verilog/ALU"
+		).generate(new Shifter)
 	}
 }
