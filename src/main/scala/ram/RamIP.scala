@@ -1,22 +1,24 @@
-package rom
+package ram
 
 import spinal.core._
 import spinal.lib._
 
-class RomIP extends BlackBox {
+class RamIP extends BlackBox {
 	val io = new Bundle {
 		val addra = in UInt (16 bits)
 		val clka = in Bool()
-		val douta = out UInt (32 bits)
+		val dina = in UInt (64 bits)
+		val douta = out UInt (64 bits)
+		val wea = in Bool()
 	}
 	noIoPrefix()
 }
 
-object RomIPVerilog {
+object RamIPVerilog {
 	def main(args: Array[String]): Unit = {
 		SpinalConfig(
 			mode = Verilog,
-			targetDirectory = "verilog/RomIP"
-		).generate(new RomIP)
+			targetDirectory = "verilog/RamIP"
+		).generate(new RamIP)
 	}
 }

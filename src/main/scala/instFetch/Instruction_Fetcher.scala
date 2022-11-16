@@ -28,7 +28,7 @@ class Instruction_Fetcher extends Component {
 
 		val coreClockDomain = ClockDomain.internal(
 			name = "core",
-			frequency = FixedFrequency(25 MHz)
+			frequency = FixedFrequency(100 MHz)
 		)
 
 		coreClockDomain.clock := io.clk
@@ -53,7 +53,7 @@ class Instruction_Fetcher extends Component {
 		val instRom = new Rom
 		instRom.io.clk := ClockDomain.current.clock
 		instRom.io.rst := ClockDomain.current.reset
-		instRom.io.addr := pc
+		instRom.io.addr := pc(15 downto 0)
 		io.instruction := instRom.io.data
 
 

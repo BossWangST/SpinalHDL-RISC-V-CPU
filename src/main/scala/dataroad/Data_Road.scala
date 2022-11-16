@@ -3,6 +3,7 @@ package dataroad
 import alu.ALU
 import control.Controller
 import instFetch.Instruction_Fetcher
+import ram.Ram
 import reg.Register_file
 import rom.Rom
 import spinal.core._
@@ -12,15 +13,19 @@ class Data_Road extends Component {
 	val io = new Bundle {
 		val clk = in Bool()
 		val rst = in Bool()
+		val pc = out UInt (64 bits)
 	}
 	noIoPrefix()
 
 	val inst_fetcher = new Instruction_Fetcher // get instructions
 	val controller = new Controller // get control signals from instruction
 	val reg = new Register_file // 64-bit registers
+	reg.io.clk := io.clk
+	reg.io.rst := io.rst
 	val alu = new ALU
-	val rom = new Rom
+	val ram = new Ram
 
+	io.pc := inst_fetcher.io.pc_debug
 	// signals for IF
 	val IF_enable = Bool()
 	val branchAddr = UInt(12 bits)
@@ -51,32 +56,35 @@ class Data_Road extends Component {
 	reg.io.RegWrite := controller.io.regWriteEnable
 
 	// signals for ALU
-	val data1 = reg.io.readData1
+	val data1 = UInt(64 bits)
+	data1 := reg.io.readData1
 	val immediate = UInt(64 bits)
 	when(controller.io.store =/= 0) {
-		immediate := controller.io.instruction(31 downto 25) @@ controller.io.instruction(11 downto 7)
+		immediate := U"52'b0" @@ controller.io.instruction(31 downto 25) @@ controller.io.instruction(11 downto 7)
 	} otherwise {
 		immediate := U(controller.io.instruction(31), 52 bits) @@ controller.io.instruction(31 downto 20)
 	}
 
+	branchAddr := (controller.io.branch =/= 0) ? (controller.io.instruction(31).asUInt @@ controller.io.instruction(7).asUInt @@ controller.io.instruction(30 downto 25) @@ controller.io.instruction(11 downto 8)) | U"12'b0"
+	/*
 	when(controller.io.branch =/= 0) {
 		branchAddr := controller.io.instruction(31).asUInt @@ controller.io.instruction(7).asUInt @@ controller.io.instruction(30 downto 25) @@ controller.io.instruction(11 downto 8)
 	}
-	when(controller.io.jump) {
-		jumpAddr := controller.io.instruction(31).asUInt @@ controller.io.instruction(19 downto 12) @@ controller.io.instruction(20).asUInt @@ controller.io.instruction(30 downto 21)
-	} elsewhen (controller.io.jalr) {
-		jumpAddr := alu.io.aluResult
-	}
-	val data2 = controller.io.aluSrc ? reg.io.readData2 | immediate
 
+	 */
+	jumpAddr := controller.io.jump ? (controller.io.instruction(31).asUInt @@ controller.io.instruction(19 downto 12) @@ controller.io.instruction(20).asUInt @@ controller.io.instruction(30 downto 21)) |
+		(controller.io.jalr ? (alu.io.aluResult(19 downto 0).asUInt) | U"20'b0")
+	val data2 = UInt(64 bits)
+	data2 := controller.io.aluSrc ? reg.io.readData2 | immediate
 	when(controller.io.strip32) {
-		data1 := U"32'b0" @@ data1(31 downto 0)
-		data2 := U"32'b0" @@ data2(31 downto 0)
+		data1(63 downto 32) := U"32'b0"
+		data2(63 downto 32) := U"32'b0"
 	}
+
 
 	alu.io.aluOp := controller.io.aluCtr
-	alu.io.data1 := data1
-	alu.io.data2 := data2
+	alu.io.data1 := data1.asSInt
+	alu.io.data2 := data2.asSInt
 
 	switch(controller.io.branch) {
 		default {
@@ -104,24 +112,27 @@ class Data_Road extends Component {
 			write_data := alu.io.aluResult.asUInt
 		}
 		is(1) {
-			write_data := inst_fetcher.io.pc_debug + U"4"
+			write_data := inst_fetcher.io.pc_debug + 4
 		}
 		is(2) {
-			write_data := upper_immediate
+			write_data := U"32'b0" @@ upper_immediate
 		}
 		is(3) {
 			write_data := upper_immediate + inst_fetcher.io.pc_debug
 		}
 	}
 
-	reg.io.writeData := (controller.io.load === 0) ? write_data |
-		(controller.io.load === 1)
+	reg.io.writeData := (controller.io.load === 0) ? write_data | 0
 
-	// signals for ROM
-	rom.io.clk := io.clk
-	rom.io.rst := io.rst
-	rom.io.addr := alu.io.aluResult
-	rom.io.data
+	// signals for RAM
+	ram.io.clk := io.clk
+	ram.io.rst := io.rst
+	ram.io.addr := alu.io.aluResult.asUInt(15 downto 0)
+	ram.io.data_in := reg.io.readData2
+	val load_data = UInt(64 bits)
+	load_data := ram.io.data_out
+	ram.io.write_en := controller.io.memWriteEnable
+
 }
 
 object Data_RoadVerilog {

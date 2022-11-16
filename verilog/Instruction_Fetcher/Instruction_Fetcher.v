@@ -1,6 +1,6 @@
 // Generator : SpinalHDL v1.7.0a    git head : 150a9b9067020722818dfb17df4a23ac712a7af8
 // Component : Instruction_Fetcher
-// Git hash  : 9ecf148c235ca4ff4f842a6d692883944a632ac4
+// Git hash  : ca82b6cad577b8ac862902f46c46dab6eb5f14f0
 
 `timescale 1ns/1ps
 
@@ -18,6 +18,8 @@ module Instruction_Fetcher (
   output     [63:0]   pc_reg_debug
 );
 
+  wire       [15:0]   coreArea_instRom_addr;
+  wire       [31:0]   coreArea_instRom_data;
   wire                core_clk;
   wire                core_reset;
   reg        [63:0]   coreArea_pc;
@@ -31,6 +33,12 @@ module Instruction_Fetcher (
   reg        [63:0]   coreArea_next_pc;
   reg        [63:0]   coreArea_pc_reg;
 
+  Rom coreArea_instRom (
+    .clk  (core_clk                   ), //i
+    .rst  (core_reset                 ), //i
+    .addr (coreArea_instRom_addr[15:0]), //i
+    .data (coreArea_instRom_data[31:0])  //o
+  );
   assign core_clk = clk;
   assign core_reset = rst;
   assign pc_debug = coreArea_pc;
@@ -147,7 +155,8 @@ module Instruction_Fetcher (
   end
 
   assign next_pc_debug = coreArea_next_pc;
-  assign instruction = 32'h0;
+  assign coreArea_instRom_addr = coreArea_pc[15 : 0];
+  assign instruction = coreArea_instRom_data;
   assign pc_reg_debug = coreArea_pc_reg;
   always @(*) begin
     coreArea_pc = coreArea_pc_reg;
@@ -163,9 +172,35 @@ module Instruction_Fetcher (
       if(enable) begin
         coreArea_pc_reg <= coreArea_next_pc;
       end
-      if(core_reset) begin
-        coreArea_pc_reg <= 64'h0;
-      end
+    end
+  end
+
+
+endmodule
+
+module Rom (
+  input               clk,
+  input               rst,
+  input      [15:0]   addr,
+  output reg [31:0]   data
+);
+
+  wire       [31:0]   coreArea_rom_douta;
+  wire                core_clk;
+  wire                core_reset;
+
+  RomIP coreArea_rom (
+    .addra (addr[15:0]              ), //i
+    .clka  (core_clk                ), //i
+    .douta (coreArea_rom_douta[31:0])  //o
+  );
+  assign core_clk = clk;
+  assign core_reset = rst;
+  always @(*) begin
+    if(core_reset) begin
+      data = 32'h0;
+    end else begin
+      data = coreArea_rom_douta;
     end
   end
 

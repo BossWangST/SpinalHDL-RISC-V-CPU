@@ -13,8 +13,6 @@ class ALU extends Component {
 	}
 	noIoPrefix()
 
-	val counter = Reg(UInt(8 bits)) init (0)
-	counter := counter + 1
 	//get control signal for each module: Adder, Shifter, Logical calculator
 	val opCtr = UInt(2 bits)
 	switch(io.aluOp) {

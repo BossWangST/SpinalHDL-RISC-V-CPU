@@ -8,7 +8,7 @@ class Rom extends Component {
 	val io = new Bundle {
 		val clk = in Bool()
 		val rst = in Bool()
-		val addr = in UInt (64 bits)
+		val addr = in UInt (16 bits)
 		val data = out UInt (32 bits)
 	}
 	noIoPrefix()
